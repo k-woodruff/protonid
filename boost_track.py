@@ -12,26 +12,22 @@ def load_data():
     Nbg = Np*7227.
 
     # use pandas to import csvs
-    data_p = pd.read_csv('../data/features_mcc7_forwardp_contained.csv',delimiter=',')
+    data_p = pd.read_csv('../data/new-v5/tracks/features_bnbp_544_contained.csv',delimiter=',')
     #data_b = pd.read_csv('../data/features_mcc7_muons_contained.csv',delimiter=',')
-    #data_d = pd.read_csv('../data/features_data_extunb_short_contained.csv',delimiter=',')
-    data_d = pd.read_csv('../data/features_mcc7_corsika_contained.csv',delimiter=',')
+    data_d = pd.read_csv('../data/new-v5/tracks/features_corsikaMC_15_contained.csv',delimiter=',')
+    #data_d = pd.read_csv('../data/trafcks/features_data_extunb_100_contained.csv',delimiter=',')
     # pull out features we want to use now
-    #feature_names = ['primary','ndaughters','chargeintparticle','chargeintcluster',
-    #        'chargeinthit','startchargetotal','endchargetotal','startchargeaverage',
-    #        'endchargeaverage','widthaverage','nhits','nhits0','nhits1','nhits2',
-    #        'startx','starty','startz','endx','endy','endz','len']
-    feature_names = ['primary','chargeintparticle','chargeintcluster',
-            'chargeinthit','startchargetotal','endchargetotal','diffchargetotal','startchargeaverage',
-            'endchargeaverage','widthaverage','nhits','nhits0','nhits1','nhits2',
-            'starty','startz','endy','endz','len']
+    feature_names = ['primary','ntrajpoints','startdqdx','enddqdx',
+                     'dqdxdiff','dqdxratio','totaldqdx','averagedqdx',
+                     'theta','phi','starty','startz','endy','endz','length',
+                     'cosmicscore','coscontscore','pidpida']
     data_x1 = data_p[feature_names]
     #data_x2 = data_b[feature_names]
     data_x3 = data_d[feature_names]
     # make training array
-    X1 = np.array(data_x1)[:2726,:]
+    X1 = np.array(data_x1)[:1142,:]
     #X2 = np.array(data_x2)[:5491,:]
-    X3 = np.array(data_x3)[:2726,:]
+    X3 = np.array(data_x3)[:1142,:]
     data  = np.vstack([X1,X3])
     # make class labels
     y1 = np.ones(len(X1))
@@ -63,7 +59,7 @@ def run_cv(data,label,weight):
     # since we only need the rank
     param['objective'] = 'binary:logistic'
     # scale weight of positive examples
-    param['scale_pos_weight'] = 2.
+    param['scale_pos_weight'] = 2.5
     #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
     param['eta'] = 0.05
     param['max_depth'] = 9
