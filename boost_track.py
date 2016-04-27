@@ -12,22 +12,24 @@ def load_data():
     Nbg = Np*7227.
 
     # use pandas to import csvs
-    data_p = pd.read_csv('../data/new-v5/tracks/features_bnbp_544_contained.csv',delimiter=',')
+    data_p = pd.read_csv('../data/new-v5/features_ana_mcc7_singlep_20k_contained_primary.csv',delimiter=',')
     #data_b = pd.read_csv('../data/features_mcc7_muons_contained.csv',delimiter=',')
-    data_d = pd.read_csv('../data/new-v5/tracks/features_corsikaMC_15_contained.csv',delimiter=',')
+    #data_d = pd.read_csv('../data/new-v5/features_ana_mcc7_corsikaIT_700_contained.csv',delimiter=',')
     #data_d = pd.read_csv('../data/trafcks/features_data_extunb_100_contained.csv',delimiter=',')
+    data_d = pd.read_csv('../data/new-v5/features_ana_bnbext_700_contained.csv',delimiter=',')
     # pull out features we want to use now
-    feature_names = ['primary','ntrajpoints','startdqdx','enddqdx',
-                     'dqdxdiff','dqdxratio','totaldqdx','averagedqdx',
-                     'theta','phi','starty','startz','endy','endz','length',
-                     'cosmicscore','coscontscore','pidpida']
+    feature_names = ['primary','ntrajpoints','length','starty','startz','endy','endz',
+                     'theta','phi','distlenratio','startdqdx','enddqdx','dqdxdiff','dqdxratio',
+                     'totaldqdx','averagedqdx','cosmicscore','coscontscore','pidpida']
     data_x1 = data_p[feature_names]
     #data_x2 = data_b[feature_names]
     data_x3 = data_d[feature_names]
     # make training array
-    X1 = np.array(data_x1)[:1142,:]
+    X1 = np.array(data_x1)
+    #X1 = np.array(data_x1)[:11240,:]
     #X2 = np.array(data_x2)[:5491,:]
-    X3 = np.array(data_x3)[:1142,:]
+    X3 = np.array(data_x3)
+    #X3 = np.array(data_x3)[:11240,:]
     data  = np.vstack([X1,X3])
     # make class labels
     y1 = np.ones(len(X1))
@@ -61,7 +63,7 @@ def run_cv(data,label,weight):
     # scale weight of positive examples
     param['scale_pos_weight'] = 2.5
     #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
-    param['eta'] = 0.05
+    param['eta'] = 0.2
     param['max_depth'] = 9
     param['eval_metric'] = 'error'
     param['silent'] = 1
@@ -72,7 +74,7 @@ def run_cv(data,label,weight):
     plst = list(param.items())
 
     # boost 25 tres
-    num_round = 50
+    num_round = 100
 
     test_error    = []
     test_falsepos = []
