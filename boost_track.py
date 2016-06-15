@@ -7,43 +7,79 @@ from sklearn.cross_validation import StratifiedKFold
 
 def load_data():
 
-    Np  = 2493.*6.
-    Nmu = 9.*26226.*6.
-    Nbg = Np*7227.
-
     # use pandas to import csvs
-    data_p = pd.read_csv('../data/new-v5/features_ana_mcc7_singlep_20k_contained_primary.csv',delimiter=',')
-    #data_b = pd.read_csv('../data/features_mcc7_muons_contained.csv',delimiter=',')
-    #data_d = pd.read_csv('../data/new-v5/features_ana_mcc7_corsikaIT_700_contained.csv',delimiter=',')
-    #data_d = pd.read_csv('../data/trafcks/features_data_extunb_100_contained.csv',delimiter=',')
-    data_d = pd.read_csv('../data/new-v5/features_ana_bnbext_700_contained.csv',delimiter=',')
+    data_p1 = pd.read_csv('data2/bnb/featuresana_mcc7_bnbMC_Nu_2_p_primary.csv')
+    #data_d1 = pd.read_csv('data2/bnb/featuresana_mcc7_bnbMC_Nu_2_mu.csv')
+    #data_d1 = pd.read_csv('data2/bnb/featuresana_mcc7_bnbMC_Nu_2_pi.csv')
+    #data_d1 = pd.read_csv('data2/bnb/featuresana_mcc7_bnbMC_Nu_2_em.csv')
+    #data_d1 = pd.read_csv('data2/bnb/featuresana_mcc7_bnbMC_Nu_2_k.csv')
+    data_d1 = pd.read_csv('data2/cosmic/featuresana_bnbext_6000_contained.csv')
+
     # pull out features we want to use now
-    feature_names = ['primary','ntrajpoints','length','starty','startz','endy','endz',
-                     'theta','phi','distlenratio','startdqdx','enddqdx','dqdxdiff','dqdxratio',
-                     'totaldqdx','averagedqdx','cosmicscore','coscontscore','pidpida']
-    data_x1 = data_p[feature_names]
-    #data_x2 = data_b[feature_names]
-    data_x3 = data_d[feature_names]
+    feature_names = ['nhits','length','starty','startz','endy','endz','theta','phi',
+                     'distlenratio','startdqdx','enddqdx','dqdxdiff','dqdxratio',
+                     'totaldqdx','averagedqdx','cosmicscore','coscontscore',
+                     'pidpida','pidchi','cfdistance']
+    data_p = data_p1[feature_names]
+    data_d = data_d1[feature_names]
+
     # make training array
-    X1 = np.array(data_x1)
-    #X1 = np.array(data_x1)[:11240,:]
-    #X2 = np.array(data_x2)[:5491,:]
-    X3 = np.array(data_x3)
-    #X3 = np.array(data_x3)[:11240,:]
-    data  = np.vstack([X1,X3])
+    X1 = np.array(data_p)
+    X2 = np.array(data_d)
+    data  = np.vstack([X1,X2])
+
     # make class labels
     y1 = np.ones(len(X1))
-    #y2 = np.zeros(len(X2))
-    y3 = np.zeros(len(X3))
-    label  = np.hstack([y1,y3])
+    y2 = np.zeros(len(X2))
+    label  = np.hstack([y1,y2])
+
     # make weights
-    w1 = np.ones(len(X1))*Np/len(X1)
-    #w2 = np.ones(len(X2))*Nmu/len(X2)
-    w3 = np.ones(len(X3))*Nbg/len(X3)
-    #weight = np.hstack([w1,w2,w3])
     weight = np.ones(len(data))
 
     return data,label,weight
+
+def parameter_opt(data,label,weight):
+    # setup parameters for xgboost
+    param = {}
+    # use logistic regression loss, use raw prediction before logistic transformation
+    # since we only need the rank
+    param['objective']         = 'binary:logistic'
+    # scale weight of positive examples
+    param['scale_pos_weight']  = 1.
+    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
+    param['eta']               = 0.05
+    param['eval_metric']       = 'error'
+    param['silent']            = 1
+    param['nthread']           = 6
+    param['min_child_weight']  = 4
+    param['max_depth']         = 9
+    param['gamma']             = 0.0
+    param['colsample_bytree']  = 0.8
+    param['subsample']         = 0.8
+    #param['reg_alpha']         = 1e-5
+
+    # you can directly throw param in, though we want to watch multiple metrics here
+    #plst = list(param.items())+[('eval_metric', 'falsepos')]
+    #plst = list(param.items())
+
+    dtrain = xgb.DMatrix(data,label=label)
+
+    # boost 25 tres
+    num_round = 200
+
+    '''
+    scale_pos_weights = [0.5,0.75,1.25]
+    for spw in scale_pos_weights:
+        param['scale_pos_weight'] = spw
+        plst = list(param.items())+[('eval_metric', 'falsepos')]
+        results = xgb.cv(param,dtrain,num_boost_round=num_round,nfold=10,stratified=True)
+        print 'scale_pos_weight: ',spw,', test-error-mean: ',np.array(results['test-error-mean'])[-1],', test-error-std: ',np.array(results['test-error-std'])[-1]
+
+    return
+    '''
+    results = xgb.cv(param,dtrain,num_boost_round=num_round,nfold=10,stratified=True)
+    return results
+
 
 def run_cv(data,label,weight):
 
@@ -54,27 +90,35 @@ def run_cv(data,label,weight):
 
     # print weight statistics
     #print ('weight statistics: wpos=%g, wneg=%g, ratio=%g' % ( sum_wpos, sum_wneg, sum_wpos/sum_wneg))
+    wp = len(np.where(label == 1)[0])
+    wd = len(np.where(label == 0)[0])
 
     # setup parameters for xgboost
     param = {}
     # use logistic regression loss, use raw prediction before logistic transformation
     # since we only need the rank
+    # cosmic data parameters
     param['objective'] = 'binary:logistic'
     # scale weight of positive examples
-    param['scale_pos_weight'] = 2.5
+    param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
+    print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
     #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
-    param['eta'] = 0.2
-    param['max_depth'] = 9
-    param['eval_metric'] = 'error'
-    param['silent'] = 1
-    param['nthread'] = 3
+    param['eta']               = 0.05
+    param['eval_metric']       = 'error'
+    param['silent']            = 1
+    param['nthread']           = 6
+    param['min_child_weight']  = 2
+    param['max_depth']         = 10
+    param['gamma']             = 0.0
+    param['colsample_bytree']  = 0.8
+    param['subsample']         = 0.9
+    param['reg_alpha']         = 1e-5
 
     # you can directly throw param in, though we want to watch multiple metrics here
-    #plst = list(param.items())+[('eval_metric', 'falsepos')]
     plst = list(param.items())
 
     # boost 25 tres
-    num_round = 100
+    num_round = 300
 
     test_error    = []
     test_falsepos = []
@@ -83,7 +127,7 @@ def run_cv(data,label,weight):
     indexvec      = []
 
     # get folds
-    skf = StratifiedKFold(label, 10)
+    skf = StratifiedKFold(label, 10, shuffle=True)
     for i, (train, test) in enumerate(skf):
         #print train, test
         Xtrain = data[train]
@@ -117,8 +161,48 @@ def compute_stats(ytest,ypred):
 
     return fold_error,fold_falsepos,fold_falseneg
 
+def make_bdt(data,label,weight):
 
+    # configure weights
+    #weight = np.ones(len(data))
+    #sum_wpos = sum( weight[i] for i in range(len(label)) if label[i] == 1.0  )
+    #sum_wneg = sum( weight[i] for i in range(len(label)) if label[i] == 0.0  )
 
+    # print weight statistics
+    #print ('weight statistics: wpos=%g, wneg=%g, ratio=%g' % ( sum_wpos, sum_wneg, sum_wpos/sum_wneg))
+    wp = len(np.where(label == 1)[0])
+    wd = len(np.where(label == 0)[0])
 
+    # setup parameters for xgboost
+    param = {}
+    # use logistic regression loss, use raw prediction before logistic transformation
+    # since we only need the rank
+    # cosmic data parameters
+    param['objective'] = 'binary:logistic'
+    # scale weight of positive examples
+    param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
+    print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
+    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
+    param['eta']               = 0.05
+    param['eval_metric']       = 'error'
+    param['silent']            = 1
+    param['nthread']           = 6
+    param['min_child_weight']  = 2
+    param['max_depth']         = 10
+    param['gamma']             = 0.0
+    param['colsample_bytree']  = 0.8
+    param['subsample']         = 0.9
+    param['reg_alpha']         = 1e-5
 
+    # you can directly throw param in, though we want to watch multiple metrics here
+    #plst = list(param.items())+[('eval_metric', 'falsepos')]
+    plst = list(param.items())
 
+    # boost 25 tres
+    num_round = 300
+    
+    # make dmatrices from xgboost
+    dtrain = xgb.DMatrix( data, label=label )
+    bst    = xgb.train(plst, dtrain, num_round)
+        
+    return bst
