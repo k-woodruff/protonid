@@ -53,71 +53,12 @@ def load_data():
 
     return data,label,weight
 
-def parameter_opt(data,label,weight):
-    # setup parameters for xgboost
-    param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
-    param['objective']         = 'binary:logistic'
-    # scale weight of positive examples
-    param['scale_pos_weight']  = 2.
-    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
-    param['eta']               = 0.05
-    param['eval_metric']       = 'error'
-    param['silent']            = 1
-    param['nthread']           = 6
-    param['min_child_weight']  = 4
-    param['max_depth']         = 9
-    param['gamma']             = 0.0
-    param['colsample_bytree']  = 0.8
-    param['subsample']         = 0.8
-    #param['reg_alpha']         = 1e-5
-
-    # you can directly throw param in, though we want to watch multiple metrics here
-    #plst = list(param.items())+[('eval_metric', 'falsepos')]
-    #plst = list(param.items())
-
-    dtrain = xgb.DMatrix(data,label=label)
-
-    # boost 25 tres
-    num_round = 200
-
-    '''
-    scale_pos_weights = [0.5,0.75,1.25]
-    for spw in scale_pos_weights:
-        param['scale_pos_weight'] = spw
-        plst = list(param.items())+[('eval_metric', 'falsepos')]
-        results = xgb.cv(param,dtrain,num_boost_round=num_round,nfold=10,stratified=True)
-        print 'scale_pos_weight: ',spw,', test-error-mean: ',np.array(results['test-error-mean'])[-1],', test-error-std: ',np.array(results['test-error-std'])[-1]
-
-    return
-    '''
-    results = xgb.cv(param,dtrain,num_boost_round=num_round,nfold=10,stratified=True)
-    return results
-
-
 def run_cv(data,label,weight):
 
-    # configure weights
-    #weight = np.ones(len(data))
-    #sum_wpos = sum( weight[i] for i in range(len(label)) if label[i] == 1.0  )
-    #sum_wneg = sum( weight[i] for i in range(len(label)) if label[i] == 0.0  )
-
-    # print weight statistics
-    #print ('weight statistics: wpos=%g, wneg=%g, ratio=%g' % ( sum_wpos, sum_wneg, sum_wpos/sum_wneg))
-    #wp = len(np.where(label == 1)[0])
-    #wd = len(np.where(label == 0)[0])
-
     # setup parameters for xgboost
     param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
     # cosmic data parameters
     param['objective'] = 'multi:softprob'
-    # scale weight of positive examples
-    #param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
-    #print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
-    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
     param['eta']               = 0.025
     param['eval_metric']       = 'merror'
     param['silent']            = 1
@@ -132,7 +73,6 @@ def run_cv(data,label,weight):
 
     # you can directly throw param in, though we want to watch multiple metrics here
     plst = list(param.items())+[('eval_metric', 'mlogloss')]
-    #plst = list(param.items())
 
     # boost 25 tres
     num_round = 855
@@ -180,26 +120,10 @@ def compute_stats(ytest,ypred):
 
 def make_bdt(data,label,weight):
 
-    # configure weights
-    #weight = np.ones(len(data))
-    #sum_wpos = sum( weight[i] for i in range(len(label)) if label[i] == 1.0  )
-    #sum_wneg = sum( weight[i] for i in range(len(label)) if label[i] == 0.0  )
-
-    # print weight statistics
-    #print ('weight statistics: wpos=%g, wneg=%g, ratio=%g' % ( sum_wpos, sum_wneg, sum_wpos/sum_wneg))
-    #wp = len(np.where(label == 1)[0])
-    #wd = len(np.where(label == 0)[0])
-
     # setup parameters for xgboost
     param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
     # cosmic data parameters
-    param['objective'] = 'multi:softprob'
-    # scale weight of positive examples
-    #param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
-    #print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
-    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
+    param['objective']         = 'multi:softprob'
     param['eta']               = 0.025
     param['eval_metric']       = 'merror'
     param['silent']            = 1
@@ -214,7 +138,6 @@ def make_bdt(data,label,weight):
 
     # you can directly throw param in, though we want to watch multiple metrics here
     plst = list(param.items())+[('eval_metric', 'mlogloss')]
-    #plst = list(param.items())
 
     # boost 25 tres
     num_round = 855

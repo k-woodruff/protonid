@@ -55,15 +55,13 @@ def run_cv(data,label,weight):
     # configure weights
     wp = len(np.where(label == 1)[0])
     wd = len(np.where(label == 0)[0])
-    print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
+    print 'Scale pos. weight: {}'.format(np.true_divide(wd,wp))
 
     # setup parameters for xgboost
     param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
     param['objective'] = 'binary:logistic'
     # scale weight of positive examples
-    param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
+    param['scale_pos_weight']  = np.true_divide(wd,wp)
     param['eta']               = 0.05
     param['eval_metric']       = 'error'
     param['silent']            = 1
@@ -96,7 +94,6 @@ def run_cv(data,label,weight):
         # make dmatrices from xgboost
         dtrain = xgb.DMatrix( Xtrain, label=ytrain )
         dtest  = xgb.DMatrix( Xtest )
-        #watchlist = [ (dtrain,'train') ]
 
         bst   = xgb.train(param, dtrain, num_round)
         ypred = bst.predict(dtest)
@@ -125,15 +122,13 @@ def make_bdt(data,label,weight):
     # configure weights
     wp = len(np.where(label == 1)[0])
     wd = len(np.where(label == 0)[0])
-    print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
+    print 'Scale pos. weight: {}'.format(np.true_divide(wd,wp))
 
     # setup parameters for xgboost
     param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
     param['objective'] = 'binary:logistic'
     # scale weight of positive examples
-    param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
+    param['scale_pos_weight']  = np.true_divide(wd,wp)
     param['eta']               = 0.05
     param['eval_metric']       = 'error'
     param['silent']            = 1

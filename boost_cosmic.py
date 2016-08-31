@@ -11,7 +11,6 @@ def load_data():
     data_c1 = pd.read_csv('data/corsika/features_openCOSMIC_MC_AnalysisTrees_train.csv')
     data_p1 = data_c1[data_c1.MCpdgCode == 2212]
     data_b1 = data_c1[data_c1.MCpdgCode != 2212]
-    data_d1 = pd.read_csv('data/goodruns/features_extBNB_AnalysisTrees_train.csv')
 
     # pull out features we want to use now
     feature_names = ['nhits','length','starty','startz','endy','endz','theta','phi',
@@ -20,96 +19,30 @@ def load_data():
                      'pidpida','pidchi']
     data_p = data_p1[feature_names]
     data_b = data_b1[feature_names]
-    data_d = data_d1[feature_names]
 
     # make training array
     X1 = np.array(data_p)
     X2 = np.array(data_b)
-    #X3 = np.array(data_d)
-    #data  = np.vstack([X1,X2,X3])
     data  = np.vstack([X1,X2])
 
     # make class labels
     y1 = np.ones(len(X1))
-    #y2 = np.zeros(len(X2) + len(X3))
     y2 = np.zeros(len(X2))
     label  = np.hstack([y1,y2])
 
     # make weights
     w1 = np.ones(len(X1))
     w2 = np.ones(len(X2))*np.true_divide(len(X1),len(X2))
-    #w3 = np.ones(len(X3))*np.true_divide(len(X1),len(X3))
-    #weight = np.hstack([w1,w2,w3])
     weight = np.hstack([w1,w2])
-    #weight = np.ones(len(data))
 
     return data,label,weight
 
-def parameter_opt(data,label,weight):
-    # setup parameters for xgboost
-    param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
-    param['objective']         = 'binary:logistic'
-    # scale weight of positive examples
-    param['scale_pos_weight']  = 1.
-    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
-    param['eta']               = 0.05
-    param['eval_metric']       = 'error'
-    param['silent']            = 1
-    param['nthread']           = 6
-    param['min_child_weight']  = 4
-    param['max_depth']         = 9
-    param['gamma']             = 0.0
-    param['colsample_bytree']  = 0.8
-    param['subsample']         = 0.8
-    #param['reg_alpha']         = 1e-5
-
-    # you can directly throw param in, though we want to watch multiple metrics here
-    #plst = list(param.items())+[('eval_metric', 'falsepos')]
-    #plst = list(param.items())
-
-    dtrain = xgb.DMatrix(data,label=label)
-
-    # boost 25 tres
-    num_round = 200
-
-    '''
-    scale_pos_weights = [0.5,0.75,1.25]
-    for spw in scale_pos_weights:
-        param['scale_pos_weight'] = spw
-        plst = list(param.items())+[('eval_metric', 'falsepos')]
-        results = xgb.cv(param,dtrain,num_boost_round=num_round,nfold=10,stratified=True)
-        print 'scale_pos_weight: ',spw,', test-error-mean: ',np.array(results['test-error-mean'])[-1],', test-error-std: ',np.array(results['test-error-std'])[-1]
-
-    return
-    '''
-    results = xgb.cv(param,dtrain,num_boost_round=num_round,nfold=10,stratified=True)
-    return results
-
-
 def run_cv(data,label,weight):
 
-    # configure weights
-    #weight = np.ones(len(data))
-    #sum_wpos = sum( weight[i] for i in range(len(label)) if label[i] == 1.0  )
-    #sum_wneg = sum( weight[i] for i in range(len(label)) if label[i] == 0.0  )
-
-    # print weight statistics
-    #print ('weight statistics: wpos=%g, wneg=%g, ratio=%g' % ( sum_wpos, sum_wneg, sum_wpos/sum_wneg))
-    wp = len(np.where(label == 1)[0])
-    wd = len(np.where(label == 0)[0])
-
     # setup parameters for xgboost
     param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
     # cosmic data parameters
     param['objective'] = 'binary:logistic'
-    # scale weight of positive examples
-    #param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
-    #print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
-    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
     param['eta']               = 0.025
     param['eval_metric']       = 'error'
     param['silent']            = 1
@@ -121,7 +54,6 @@ def run_cv(data,label,weight):
     param['subsample']         = 0.8
     #param['reg_alpha']         = 1e-5
 
-    # you can directly throw param in, though we want to watch multiple metrics here
     plst = list(param.items())
 
     # boost 25 tres
@@ -146,7 +78,6 @@ def run_cv(data,label,weight):
         # make dmatrices from xgboost
         dtrain = xgb.DMatrix( Xtrain, label=ytrain, weight=wtrain)
         dtest  = xgb.DMatrix( Xtest, label=ytest, weight=wtest )
-        #watchlist = [ (dtrain,'train') ]
 
         bst   = xgb.train(plst, dtrain, num_round)
         ypred = bst.predict(dtest)
@@ -171,26 +102,10 @@ def compute_stats(ytest,ypred):
 
 def make_bdt(data,label,weight):
 
-    # configure weights
-    #weight = np.ones(len(data))
-    #sum_wpos = sum( weight[i] for i in range(len(label)) if label[i] == 1.0  )
-    #sum_wneg = sum( weight[i] for i in range(len(label)) if label[i] == 0.0  )
-
-    # print weight statistics
-    #print ('weight statistics: wpos=%g, wneg=%g, ratio=%g' % ( sum_wpos, sum_wneg, sum_wpos/sum_wneg))
-    wp = len(np.where(label == 1)[0])
-    wd = len(np.where(label == 0)[0])
-
     # setup parameters for xgboost
     param = {}
-    # use logistic regression loss, use raw prediction before logistic transformation
-    # since we only need the rank
     # cosmic data parameters
     param['objective'] = 'binary:logistic'
-    # scale weight of positive examples
-    #param['scale_pos_weight'] = 3.*np.true_divide(wd,wp)
-    #print 'Scale pos. weight: {}'.format(3.*np.true_divide(wd,wp))
-    #param['scale_pos_weight'] = 100.*sum_wpos/sum_wneg
     param['eta']               = 0.025
     param['eval_metric']       = 'error'
     param['silent']            = 1
@@ -202,8 +117,6 @@ def make_bdt(data,label,weight):
     param['subsample']         = 0.8
     #param['reg_alpha']         = 1e-5
 
-    # you can directly throw param in, though we want to watch multiple metrics here
-    #plst = list(param.items())+[('eval_metric', 'falsepos')]
     plst = list(param.items())
 
     # boost 25 tres
