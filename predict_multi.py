@@ -21,7 +21,7 @@ def predict_data(fname):
 
     # load in bdts
     #bdt_multi = xgb.Booster(model_file='bdts2/bdt_multi.bst')
-    bdt_multi = xgb.Booster(model_file='multi_score1.bst')
+    bdt_multi = xgb.Booster(model_file='multi.bst')
 
     # score dataset
     m_preds  = bdt_multi.predict(dpred)
