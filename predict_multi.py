@@ -35,7 +35,7 @@ def predict_data(fname):
     data['mscore_cos'] = m_preds[:,4]
     data['mscore_max'] = max_pred
 
-    data.to_csv(fname)
+    #data.to_csv(fname)
         
     return data
 

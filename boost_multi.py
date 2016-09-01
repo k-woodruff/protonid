@@ -8,13 +8,13 @@ from sklearn.cross_validation import StratifiedKFold
 def load_data():
 
     # use pandas to import csvs
-    data_p1 = pd.read_csv('data/bnb/featuresana_bnbmc_july_p_primary.csv')
+    data_p1 = pd.read_csv('data/bnb/featuresana_bnbmc_p_primary.csv')
     data_p1 = data_p1[data_p1.mckinetic >= 0.04]
-    data_m1 = pd.read_csv('data/bnb/featuresana_bnbmc_july_mu.csv')
-    data_i1 = pd.read_csv('data/bnb/featuresana_bnbmc_july_pi.csv')
-    data_e1 = pd.read_csv('data/bnb/featuresana_bnbmc_july_em.csv')
+    data_m1 = pd.read_csv('data/bnb/featuresana_bnbmc_mu.csv')
+    data_i1 = pd.read_csv('data/bnb/featuresana_bnbmc_pi.csv')
+    data_e1 = pd.read_csv('data/bnb/featuresana_bnbmc_em.csv')
     #data_d1 = pd.read_csv('data/bnb/featuresana_bnbmc_july_k.csv')
-    data_c1 = pd.read_csv('data/cosmic/featuresana_bnbext_6000_july.csv')
+    data_c1 = pd.read_csv('data/cosmic/featuresana_bnbext_train.csv')
 
     # pull out features we want to use now
     feature_names = ['nhits','length','starty','startz','endy','endz','theta','phi',
@@ -75,7 +75,7 @@ def run_cv(data,label,weight):
     plst = list(param.items())+[('eval_metric', 'mlogloss')]
 
     # boost 25 tres
-    num_round = 855
+    num_round = 50
 
     test_error    = []
     test_falsepos = []
@@ -101,6 +101,7 @@ def run_cv(data,label,weight):
         ypred = bst.predict(dtest)
         fold_error,fold_falsepos,fold_falseneg = compute_stats(ytest,ypred)
         test_error.append(fold_error)
+        print 'Fold error: {}'.format(fold_error)
         test_falsepos.append(fold_falsepos)
         test_falseneg.append(fold_falseneg)
         for i in range(5):
@@ -112,8 +113,8 @@ def run_cv(data,label,weight):
 def compute_stats(ytest,ypred):
   
     yscore        = ypred[:,0]
-    fold_falsepos = float(len(np.where((yscore > 0.75) & (ytest != 0))[0]))/len(np.where(ytest != 0)[0])
-    fold_falseneg = float(len(np.where((yscore < 0.75) & (ytest == 0))[0]))/len(np.where(ytest == 0)[0])
+    fold_falsepos = float(len(np.where((yscore > 0.5) & (ytest != 0))[0]))/len(np.where(ytest != 0)[0])
+    fold_falseneg = float(len(np.where((yscore < 0.5) & (ytest == 0))[0]))/len(np.where(ytest == 0)[0])
     fold_error    = float(fold_falsepos*len(np.where(ytest != 0)[0]) + fold_falseneg*len(np.where(ytest == 0)[0]))/len(ytest)
 
     return fold_error,fold_falsepos,fold_falseneg
@@ -140,7 +141,7 @@ def make_bdt(data,label,weight):
     plst = list(param.items())+[('eval_metric', 'mlogloss')]
 
     # boost 25 tres
-    num_round = 855
+    num_round = 50
     
     # make dmatrices from xgboost
     dtrain = xgb.DMatrix( data, label=label, weight=weight )
