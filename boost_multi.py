@@ -8,12 +8,12 @@ from sklearn.cross_validation import StratifiedKFold
 def load_data():
 
     # use pandas to import csvs
-    data_pb   = pd.read_csv('data/bnb/featuresana_bnbmc_august_p_primary.csv')
+    data_pb   = pd.read_csv('data/bnb/featuresana_bnbmc_p_primary.csv')
     data_pb   = data_pb[data_pb.mckinetic >= 0.04]
-    data_m1   = pd.read_csv('data/bnb/featuresana_bnbmc_august_mu.csv')
-    data_i1   = pd.read_csv('data/bnb/featuresana_bnbmc_august_pi.csv')
-    data_e1   = pd.read_csv('data/bnb/featuresana_bnbmc_august_em.csv')
-    data_call = pd.read_csv('data/corsika/featuresana_corsikait_august_train.csv')
+    data_m1   = pd.read_csv('data/bnb/featuresana_bnbmc_mu.csv')
+    data_i1   = pd.read_csv('data/bnb/featuresana_bnbmc_pi.csv')
+    data_e1   = pd.read_csv('data/bnb/featuresana_bnbmc_em.csv')
+    data_call = pd.read_csv('data/corsika/featuresana_corsikait_train.csv')
     data_c1   = data_call[data_call.mcpdg != 2212]
     data_cp   = data_call[(data_call.mcpdg == 2212) & (data_call.mckinetic >= 0.04)]
     pframes   = [ data_pb, data_cp ]
@@ -96,7 +96,7 @@ def run_cv(data,label,weight):
     #plst = list(param.items())
 
     # boost 925 tres
-    num_round = 925
+    num_round = 50
 
     test_error    = []
     test_falsepos = []
@@ -127,6 +127,7 @@ def run_cv(data,label,weight):
         for i in range(5):
             scores[i,test] = ypred[:,i]
         scores[5,test] = ytest
+        print 'Fold error: %.4f' %fold_error
 
     return test_error,test_falsepos,test_falseneg,scores
 
@@ -178,7 +179,7 @@ def make_bdt(data,label,weight):
     #plst = list(param.items())
 
     # boost 925 tres
-    num_round = 925
+    num_round = 50
     
     # make dmatrices from xgboost
     dtrain = xgb.DMatrix( data, label=label, weight=weight )
