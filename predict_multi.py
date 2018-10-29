@@ -3,7 +3,6 @@
 import pandas as pd
 import numpy as np
 import xgboost as xgb
-from sklearn.cross_validation import StratifiedKFold
 
 def predict_data(fname):
 
@@ -12,9 +11,8 @@ def predict_data(fname):
 
     # pull out features we want to use now
     feature_names = ['nhits','length','starty','startz','endy','endz','theta','phi',
-                     'distlenratio','startdqdx','enddqdx','dqdxdiff','dqdxratio',
-                     'totaldqdx','averagedqdx','cosmicscore','coscontscore',
-                     'pidpida','pidchi','cfdistance']
+                     'distlenratio','startdedx','dedxratio','trtotaldedx','traveragededx',
+                     'cosmicscore','coscontscore']
     d_feat = data[feature_names]
 
     dpred =  xgb.DMatrix(d_feat)
